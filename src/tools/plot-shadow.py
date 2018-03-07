@@ -144,6 +144,13 @@ def main():
         metavar="PATTERN",
         default="^(relay|4uthority)")
 
+    parser.add_argument('--host-exp-payment',
+        help="""Set the regex PATTERN that is used with re.search to filter
+                by hostname the data used in generated Payment plots""",
+        action="store", dest="hostpatternpayment",
+        metavar="PATTERN",
+        default="client")
+
     args = parser.parse_args()
     conf = args.shadow_config
 
@@ -151,8 +158,9 @@ def main():
         args.hostpatternshadow = args.hostpatternall
         args.hostpatterntgen = args.hostpatternall
         args.hostpatterntor = args.hostpatternall
+        args.hostpatternpayment = args.hostpatternall
 
-    tickdata, shdata, ftdata, tgendata, tordata = get_data(args.experiments, args.lineformats, args.skiptime, args.rskiptime, args.hostpatternshadow, args.hostpatterntgen, args.hostpatterntor)
+    tickdata, shdata, ftdata, tgendata, tordata, paymentdata = get_data(args.experiments, args.lineformats, args.skiptime, args.rskiptime, args.hostpatternshadow, args.hostpatterntgen, args.hostpatterntor, args.hostpatternpayment)
 
     page = PdfPages("{0}shadow.results.pdf".format(args.prefix+'.' if args.prefix is not None else ''))
     # use a try block in case there are errors, the PDF will still be openable
@@ -186,6 +194,15 @@ def main():
             plot_tor(tordata, page, capacities=capacities, direction="bytes_read")
             capacities = get_relay_capacities(conf, bwup=True) if conf is not None else None
             plot_tor(tordata, page, capacities=capacities, direction="bytes_written")
+        if len(paymentdata) > 0:
+            plot_payment_direct_numpayments(paymentdata, page)
+            plot_payment_direct_lifetime(paymentdata, page)
+            plot_payment_direct_ttpayment(paymentdata, page)
+            plot_payment_direct_ttclose(paymentdata, page)
+            plot_payment_intermediary_numpayments(paymentdata, page)
+            plot_payment_intermediary_lifetime(paymentdata, page)
+            plot_payment_intermediary_ttpayment(paymentdata, page)
+            plot_payment_intermediary_ttclose(paymentdata, page)
     except:
         page.close()
         print >>sys.stderr, "!! there was an error while plotting, but some graphs may still be readable"
@@ -1092,8 +1109,176 @@ def plot_tor(data, page, capacities=None, direction="bytes_written"):
         pylab.close()
         del(capsfig)
 
-def get_data(experiments, lineformats, skiptime, rskiptime, hostpatternshadow, hostpatterntgen, hostpatterntor):
-    tickdata, shdata, ftdata, tgendata, tordata = [], [], [], [], []
+def plot_payment_direct_numpayments(data, page):
+    f = None
+
+    for (d, label, lineformat) in data:
+        fb = []
+        for client in d:
+            if f is None: f = pylab.figure()
+            for sec in d[client]["direct"]["numpayments"]:
+                fb.extend(d[client]["direct"]["numpayments"][sec])
+        if f is not None and len(fb) > 0:
+            x, y = getcdf(fb)
+            pylab.plot(x, y, lineformat, label=label)
+
+    if f is not None:
+        pylab.xlabel("Number of Payments (s)")
+        pylab.ylabel("Cumulative Fraction")
+        pylab.title("number of payments, all direct nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_payment_direct_lifetime(data, page):
+    f = None
+
+    for (d, label, lineformat) in data:
+        fb = []
+        for client in d:
+            if f is None: f = pylab.figure()
+            for sec in d[client]["direct"]["lifetime"]:
+                fb.extend(d[client]["direct"]["lifetime"][sec])
+        if f is not None and len(fb) > 0:
+            x, y = getcdf(fb)
+            pylab.plot(x, y, lineformat, label=label)
+
+    if f is not None:
+        pylab.xlabel("Elapsed Time (s)")
+        pylab.ylabel("Cumulative Fraction")
+        pylab.title("total lifetime, all direct nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_payment_direct_ttpayment(data, page):
+    f = None
+
+    for (d, label, lineformat) in data:
+        fb = []
+        for client in d:
+            if f is None: f = pylab.figure()
+            for sec in d[client]["direct"]["ttpayment"]:
+                fb.extend(d[client]["direct"]["ttpayment"][sec])
+        if f is not None and len(fb) > 0:
+            x, y = getcdf(fb)
+            pylab.plot(x, y, lineformat, label=label)
+
+    if f is not None:
+        pylab.xlabel("Elapsed Time (s)")
+        pylab.ylabel("Cumulative Fraction")
+        pylab.title("time to first payment, all direct nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_payment_direct_ttclose(data, page):
+    f = None
+
+    for (d, label, lineformat) in data:
+        fb = []
+        for client in d:
+            if f is None: f = pylab.figure()
+            for sec in d[client]["direct"]["ttclose"]:
+                fb.extend(d[client]["direct"]["ttclose"][sec])
+        if f is not None and len(fb) > 0:
+            x, y = getcdf(fb)
+            pylab.plot(x, y, lineformat, label=label)
+
+    if f is not None:
+        pylab.xlabel("Elapsed Time (s)")
+        pylab.ylabel("Cumulative Fraction")
+        pylab.title("time to close, all direct nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_payment_intermediary_numpayments(data, page):
+    f = None
+
+    for (d, label, lineformat) in data:
+        fb = []
+        for client in d:
+            if f is None: f = pylab.figure()
+            for sec in d[client]["intermediary"]["numpayments"]:
+                fb.extend(d[client]["intermediary"]["numpayments"][sec])
+        if f is not None and len(fb) > 0:
+            x, y = getcdf(fb)
+            pylab.plot(x, y, lineformat, label=label)
+
+    if f is not None:
+        pylab.xlabel("Number of Payments (s)")
+        pylab.ylabel("Cumulative Fraction")
+        pylab.title("number of payments, all intermediary nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_payment_intermediary_lifetime(data, page):
+    f = None
+
+    for (d, label, lineformat) in data:
+        fb = []
+        for client in d:
+            if f is None: f = pylab.figure()
+            for sec in d[client]["intermediary"]["lifetime"]:
+                fb.extend(d[client]["intermediary"]["lifetime"][sec])
+        if f is not None and len(fb) > 0:
+            x, y = getcdf(fb)
+            pylab.plot(x, y, lineformat, label=label)
+
+    if f is not None:
+        pylab.xlabel("Elapsed Time (s)")
+        pylab.ylabel("Cumulative Fraction")
+        pylab.title("total lifetime, all intermediary nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_payment_intermediary_ttpayment(data, page):
+    f = None
+
+    for (d, label, lineformat) in data:
+        fb = []
+        for client in d:
+            if f is None: f = pylab.figure()
+            for sec in d[client]["intermediary"]["ttpayment"]:
+                fb.extend(d[client]["intermediary"]["ttpayment"][sec])
+        if f is not None and len(fb) > 0:
+            x, y = getcdf(fb)
+            pylab.plot(x, y, lineformat, label=label)
+
+    if f is not None:
+        pylab.xlabel("Elapsed Time (s)")
+        pylab.ylabel("Cumulative Fraction")
+        pylab.title("time to first payment, all intermediary nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_payment_intermediary_ttclose(data, page):
+    f = None
+
+    for (d, label, lineformat) in data:
+        fb = []
+        for client in d:
+            if f is None: f = pylab.figure()
+            for sec in d[client]["intermediary"]["ttclose"]:
+                fb.extend(d[client]["intermediary"]["ttclose"][sec])
+        if f is not None and len(fb) > 0:
+            x, y = getcdf(fb)
+            pylab.plot(x, y, lineformat, label=label)
+
+    if f is not None:
+        pylab.xlabel("Elapsed Time (s)")
+        pylab.ylabel("Cumulative Fraction")
+        pylab.title("time to close, all intermediary nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def get_data(experiments, lineformats, skiptime, rskiptime, hostpatternshadow, hostpatterntgen, hostpatterntor, hostpatternpayment):
+    tickdata, shdata, ftdata, tgendata, tordata, paymentdata = [], [], [], [], [], []
     lflist = lineformats.strip().split(",")
 
     lfcycle = cycle(lflist)
@@ -1139,7 +1324,17 @@ def get_data(experiments, lineformats, skiptime, rskiptime, hostpatternshadow, h
         data = prune_data(data, skiptime, rskiptime, hostpatterntor)
         if len(data['nodes']) > 0: tordata.append((data['nodes'], label, lfcycle.next()))
 
-    return tickdata, shdata, ftdata, tgendata, tordata
+    lfcycle = cycle(lflist)
+    for (path, label) in experiments:
+        log = os.path.abspath(os.path.expanduser("{0}/stats.payment.json.xz".format(path)))
+        if not os.path.exists(log): continue
+        xzcatp = subprocess.Popen(["xzcat", log], stdout=subprocess.PIPE)
+        data = json.load(xzcatp.stdout)
+        data = prune_data(data, skiptime, rskiptime, hostpatternpayment)
+        if 'nodes' in data and len(data['nodes']) > 0:
+            paymentdata.append((data['nodes'], label, lfcycle.next()))
+
+    return tickdata, shdata, ftdata, tgendata, tordata, paymentdata
 
 def prune_data(data, skiptime, rskiptime, hostpattern):
     if 'nodes' in data:
