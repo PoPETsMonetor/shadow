@@ -183,6 +183,7 @@ def search_debug_file():
                     find_build_id('/lib/i386-linux-gnu/ld-2.24.so'),
                     # solus - link points to latest version of ld
                     find_build_id('/usr/lib/ld-linux-x86-64.so.2'),
+                    find_build_id('/lib/x86_64-linux-gnu/ld-2.25.so'),
                     ]
     for file in files_to_try:
         if not file:
