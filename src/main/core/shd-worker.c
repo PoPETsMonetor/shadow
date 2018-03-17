@@ -40,8 +40,6 @@ struct _Worker {
     MAGIC_DECLARE;
 };
 
-ObjectCounter* globalObjectCounts = NULL;
-
 static Worker* _worker_new(Slave*, guint);
 static void _worker_free(Worker*);
 
@@ -166,8 +164,8 @@ gpointer worker_run(WorkerRunData* data) {
         countdownlatch_await(data->notifyReadyToJoin);
     }
 
-    /* cleanup is all done */
-    message("thread-specific info after cleanup: %s", objectcounter_toString(worker->objectCounts));
+    /* cleanup is all done, send object counts to slave */
+    slave_storeCounts(worker->slave, worker->objectCounts);
 
     /* synchronize thread join */
     CountDownLatch* notifyJoined = data->notifyJoined;
@@ -191,7 +189,7 @@ gpointer worker_run(WorkerRunData* data) {
     return NULL;
 }
 
-void worker_scheduleTask(Task* task, SimulationTime nanoDelay) {
+gboolean worker_scheduleTask(Task* task, SimulationTime nanoDelay) {
     utility_assert(task);
 
     Worker* worker = _worker_getPrivate();
@@ -199,9 +197,12 @@ void worker_scheduleTask(Task* task, SimulationTime nanoDelay) {
     if(slave_schedulerIsRunning(worker->slave)) {
         utility_assert(worker->clock.now != SIMTIME_INVALID);
         utility_assert(worker->active.host != NULL);
+
         Event* event = event_new_(task, worker->clock.now + nanoDelay, worker->active.host);
         GQuark hostID = host_getID(worker->active.host);
-        scheduler_push(worker->scheduler, event, hostID, hostID);
+        return scheduler_push(worker->scheduler, event, hostID, hostID);
+    } else {
+        return FALSE;
     }
 }
 
@@ -210,7 +211,6 @@ static void _worker_runDeliverPacketTask(Packet* packet, gpointer userData) {
     NetworkInterface* interface = host_lookupInterface(_worker_getPrivate()->active.host, ip);
     utility_assert(interface != NULL);
     networkinterface_packetArrived(interface, packet);
-    packet_unref(packet);
 }
 
 void worker_sendPacket(Packet* packet) {
@@ -256,8 +256,9 @@ void worker_sendPacket(Packet* packet) {
         Host* dstHost = scheduler_getHost(worker->scheduler, dstID);
         utility_assert(dstHost);
 
-        Task* packetTask = task_new((TaskFunc)_worker_runDeliverPacketTask, packet, NULL);
         packet_ref(packet);
+        Task* packetTask = task_new((TaskCallbackFunc)_worker_runDeliverPacketTask,
+                packet, NULL, (TaskObjectFreeFunc)packet_unref, NULL);
         Event* packetEvent = event_new_(packetTask, deliverTime, dstHost);
         task_unref(packetTask);
 
@@ -411,19 +412,9 @@ void worker_countObject(ObjectType otype, CounterType ctype) {
      * with multiple workers. */
     if(worker_isAlive()) {
         Worker* worker = _worker_getPrivate();
-        objectcounter_increment(worker->objectCounts, otype, ctype);
+        objectcounter_incrementOne(worker->objectCounts, otype, ctype);
     } else {
-        /* this is a hack, but we don't want to miss free calls */
-        if(!globalObjectCounts) {
-            globalObjectCounts = objectcounter_new();
-            objectcounter_increment(globalObjectCounts, otype, ctype);
-        }
-    }
-}
-
-void worker_logAndFreeGlobalObjectCounts() {
-    if(globalObjectCounts != NULL) {
-        message("global state: %s", objectcounter_toString(globalObjectCounts));
-        objectcounter_free(globalObjectCounts);
+        /* has a global lock, so don't do it unless there is no worker object */
+        slave_countObject(otype, ctype);
     }
 }

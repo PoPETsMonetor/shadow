@@ -25,12 +25,11 @@ DNS* worker_getDNS();
 Topology* worker_getTopology();
 Options* worker_getOptions();
 gpointer worker_run(WorkerRunData*);
-void worker_scheduleTask(Task* task, SimulationTime nanoDelay);
+gboolean worker_scheduleTask(Task* task, SimulationTime nanoDelay);
 void worker_sendPacket(Packet* packet);
 gboolean worker_isAlive();
 
 void worker_countObject(ObjectType otype, CounterType ctype);
-void worker_logAndFreeGlobalObjectCounts();
 
 SimulationTime worker_getCurrentTime();
 EmulatedTime worker_getEmulatedTime();

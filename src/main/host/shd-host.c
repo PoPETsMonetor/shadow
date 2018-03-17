@@ -107,6 +107,8 @@ Host* host_new(HostParameters* params) {
     /* we go back to the slave setup process here, so stop counting this host execution */
     g_timer_stop(host->executionTimer);
 
+    worker_countObject(OBJECT_TYPE_HOST, COUNTER_TYPE_NEW);
+
     return host;
 }
 
@@ -114,6 +116,8 @@ static void _host_free(Host* host) {
     MAGIC_ASSERT(host);
     MAGIC_CLEAR(host);
     g_free(host);
+
+    worker_countObject(OBJECT_TYPE_HOST, COUNTER_TYPE_FREE);
 }
 
 /* this is needed outside of the free function, because there are parts of the shutdown
@@ -138,15 +142,18 @@ void host_shutdown(Host* host) {
     }
 
     if(host->descriptors) {
-        /* tcp servers and their children holds refs to each other. make sure they
-         * all get freed by removing the refs in one direction */
         GHashTableIter iter;
         gpointer key, value;
         g_hash_table_iter_init(&iter, host->descriptors);
         while(g_hash_table_iter_next(&iter, &key, &value)) {
             Descriptor* desc = value;
             if(desc && desc->type == DT_TCPSOCKET) {
+              /* tcp servers and their children holds refs to each other. make
+               * sure they all get freed by removing the refs in one direction */
                 tcp_clearAllChildrenIfServer((TCP*)desc);
+            } else if(desc && (desc->type == DT_SOCKETPAIR || desc->type == DT_PIPE)) {
+              /* we need to correctly update the linked channel refs */
+              channel_setLinkedChannel((Channel*)desc, NULL);
             }
         }
 
@@ -320,9 +327,23 @@ void host_freeAllApplications(Host* host) {
     MAGIC_ASSERT(host);
     debug("start freeing applications for host '%s'", host->params.hostname);
     while(!g_queue_is_empty(host->processes)) {
-        process_unref(g_queue_pop_head(host->processes));
+        Process* proc = g_queue_pop_head(host->processes);
+        process_stop(proc);
+        process_unref(proc);
     }
     debug("done freeing application for host '%s'", host->params.hostname);
+
+    debug("start clearing epoll descriptors for host '%s'", host->params.hostname);
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init(&iter, host->descriptors);
+    while(g_hash_table_iter_next(&iter, &key, &value)) {
+        Descriptor* descriptor = value;
+        if(descriptor->type == DT_EPOLL) {
+            epoll_clearWatchListeners((Epoll*) descriptor);
+        }
+    }
+    debug("done clearing epoll descriptors for host '%s'", host->params.hostname);
 }
 
 gint host_compare(gconstpointer a, gconstpointer b, gpointer user_data) {
@@ -454,8 +475,7 @@ static void _host_unmonitorDescriptor(Host* host, gint handle) {
 
     Descriptor* descriptor = host_lookupDescriptor(host, handle);
     if(descriptor) {
-        if(descriptor->type == DT_TCPSOCKET || descriptor->type == DT_UDPSOCKET)
-        {
+        if(descriptor->type == DT_TCPSOCKET || descriptor->type == DT_UDPSOCKET) {
             Socket* socket = (Socket*) descriptor;
             _host_disassociateInterface(host, socket);
         }
@@ -487,9 +507,11 @@ static void _host_returnPreviousDescriptorHandle(Host* host, gint handle) {
 
 void host_returnHandleHack(gint handle) {
     /* TODO replace this with something more graceful? */
-    Host* host = worker_getActiveHost();
-    if(host) {
-        _host_returnPreviousDescriptorHandle(host, handle);
+    if(worker_isAlive()) {
+        Host* host = worker_getActiveHost();
+        if(host) {
+            _host_returnPreviousDescriptorHandle(host, handle);
+        }
     }
 }
 

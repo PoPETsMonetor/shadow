@@ -40,6 +40,7 @@ static void _timer_free(Timer* timer) {
     MAGIC_ASSERT(timer);
     MAGIC_CLEAR(timer);
     g_free(timer);
+    worker_countObject(OBJECT_TYPE_TIMER, COUNTER_TYPE_FREE);
 }
 
 static DescriptorFunctionTable _timerFunctions = {
@@ -69,6 +70,8 @@ Timer* timer_new(gint handle, gint clockid, gint flags) {
 
     descriptor_init(&(timer->super), DT_TIMER, &_timerFunctions, handle);
     descriptor_adjustStatus(&(timer->super), DS_ACTIVE, TRUE);
+
+    worker_countObject(OBJECT_TYPE_TIMER, COUNTER_TYPE_NEW);
 
     return timer;
 }
@@ -188,10 +191,11 @@ static void _timer_scheduleNewExpireEvent(Timer* timer) {
 
     /* callback to our own node */
     gpointer next = GUINT_TO_POINTER(timer->nextExpireID);
-    Task* task = task_new((TaskFunc)_timer_expire, timer, next);
 
     /* ref the timer storage in the callback event */
-    descriptor_ref(&timer->super);
+    descriptor_ref(timer);
+    Task* task = task_new((TaskCallbackFunc)_timer_expire,
+            timer, next, descriptor_unref, NULL);
 
     SimulationTime delay = timer->nextExpireTime - worker_getCurrentTime();
 
@@ -245,9 +249,6 @@ static void _timer_expire(Timer* timer, gpointer data) {
             _timer_scheduleNewExpireEvent(timer);
         }
     }
-
-    /* unref the timer storage in the original task callback event */
-    descriptor_unref(&timer->super);
 }
 
 static void _timer_arm(Timer* timer, const struct itimerspec *config, gint flags) {

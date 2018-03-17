@@ -5,24 +5,6 @@ import re
 import getopt
 import os
 
-
-def find_build_id(path):
-    if os.path.exists(path):
-        file = os.popen('readelf -n {}'.format(path), 'r')
-        lines = file.readlines()
-        regex = re.compile(r'^    Build ID: (\w+)$')
-
-        for line in lines:
-            result = regex.search(line)
-
-            if not result:
-                continue
-
-            h = result.group(1)
-            return "/usr/lib/debug/.build-id/{}/{}.debug".format(h[0:2], h[2:])
-
-    return None
-
 class Data:
     def __init__(self, data):
         self.data = data
@@ -145,6 +127,31 @@ class DebugData:
 class CouldNotFindFile:
     pass
 
+
+def find_build_id(path):
+    if not os.path.exists(path):
+        return None
+    file = os.popen('readelf -n {}'.format(path), 'r')
+    lines = file.readlines()
+    regex = re.compile(r'^    Build ID: (\w+)$')
+    for line in lines:
+        result = regex.search(line)
+        if result:
+            h = result.group(1)
+            return "/usr/lib/debug/.build-id/{}/{}.debug".format(h[0:2], h[2:])
+    return None
+
+def check_file_regex(directory, file_regex):
+    if not os.path.exists(directory):
+        return None
+    lines = os.listdir(directory)
+    regex = re.compile(file_regex)
+    for line in lines:
+        result = regex.search(line)
+        if result:
+            return directory + result.group()
+    return None
+
 def search_debug_file():
     files_to_try = ['/usr/lib64/debug/lib64/ld-2.11.2.so.debug',
                     '/usr/lib/debug/lib64/ld-linux-x86-64.so.2.debug',
@@ -188,10 +195,8 @@ def search_debug_file():
     for file in files_to_try:
         if not file:
             continue
-
         if os.path.isfile (file):
             return file
-
     raise CouldNotFindFile ()
 
 def list_lib_path():
