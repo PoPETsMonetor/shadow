@@ -195,23 +195,11 @@ def main():
             capacities = get_relay_capacities(conf, bwup=True) if conf is not None else None
             plot_tor(tordata, page, capacities=capacities, direction="bytes_written")
         if len(paymentdata) > 0:
-            plot_payment_guard_numpayments(paymentdata, page)
-            plot_payment_guard_lifetime(paymentdata, page)
-            plot_payment_guard_ttestablish(paymentdata, page)
-            plot_payment_guard_ttpayment(paymentdata, page)
-            plot_payment_guard_ttclose(paymentdata, page)
-
-            plot_payment_middle_numpayments(paymentdata, page)
-            plot_payment_middle_lifetime(paymentdata, page)
-            plot_payment_middle_ttestablish(paymentdata, page)
-            plot_payment_middle_ttpayment(paymentdata, page)
-            plot_payment_middle_ttclose(paymentdata, page)
-
-            plot_payment_exit_numpayments(paymentdata, page)
-            plot_payment_exit_lifetime(paymentdata, page)
-            plot_payment_exit_ttestablish(paymentdata, page)
-            plot_payment_exit_ttpayment(paymentdata, page)
-            plot_payment_exit_ttclose(paymentdata, page)
+            plot_payment_numpayments(paymentdata, page)
+            plot_payment_lifetime(paymentdata, page)
+            plot_payment_ttestablish(paymentdata, page)
+            plot_payment_ttpayment(paymentdata, page)
+            plot_payment_ttclose(paymentdata, page)
     except:
         page.close()
         print >>sys.stderr, "!! there was an error while plotting, but some graphs may still be readable"
@@ -1118,321 +1106,120 @@ def plot_tor(data, page, capacities=None, direction="bytes_written"):
         pylab.close()
         del(capsfig)
 
-def plot_payment_guard_numpayments(data, page):
+def plot_payment_numpayments(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["guard"]["numpayments"]:
-                fb.extend(d[client]["guard"]["numpayments"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
+        for role in ["guard, middle, exit"]:
+            fb = []
+            for client in d:
+                if f is None: f = pylab.figure()
+                for sec in d[client][role]["numpayments"]:
+                    fb.extend(d[client][role]["numpayments"][sec])
+            if f is not None and len(fb) > 0:
+                x, y = getcdf(fb)
+                series = label + " (" + role + ")"
+                pylab.plot(x, y, lineformat, label=series)
 
     if f is not None:
         pylab.xlabel("Number of Payments (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("number of payments, all guard nanochannels")
+        pylab.title("number of payments, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_payment_guard_lifetime(data, page):
+def plot_payment_lifetime(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["guard"]["lifetime"]:
-                fb.extend(d[client]["guard"]["lifetime"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
+        for role in ["guard, middle, exit"]:
+            fb = []
+            for client in d:
+                if f is None: f = pylab.figure()
+                for sec in d[client][role]["lifetime"]:
+                    fb.extend(d[client][role]["lifetime"][sec])
+            if f is not None and len(fb) > 0:
+                x, y = getcdf(fb)
+                series = label + " (" + role + ")"
+                pylab.plot(x, y, lineformat, label=series)
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("total lifetime, all guard nanochannels")
+        pylab.title("total lifetime, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_payment_guard_ttestablish(data, page):
+def plot_payment_ttestablish(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["guard"]["ttestablish"]:
-                fb.extend(d[client]["guard"]["ttestablish"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
+        for role in ["guard, middle, exit"]:
+            fb = []
+            for client in d:
+                if f is None: f = pylab.figure()
+                for sec in d[client][role]["ttestablish"]:
+                    fb.extend(d[client][role]["ttestablish"][sec])
+            if f is not None and len(fb) > 0:
+                x, y = getcdf(fb)
+                series = label + " (" + role + ")"
+                pylab.plot(x, y, lineformat, label=series)
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to establish, all guard nanochannels")
+        pylab.title("time to establish, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_payment_guard_ttpayment(data, page):
+def plot_payment_ttpayment(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["guard"]["ttpayment"]:
-                fb.extend(d[client]["guard"]["ttpayment"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
+        for role in ["guard, middle, exit"]:
+            fb = []
+            for client in d:
+                if f is None: f = pylab.figure()
+                for sec in d[client][role]["ttpayment"]:
+                    fb.extend(d[client][role]["ttpayment"][sec])
+            if f is not None and len(fb) > 0:
+                x, y = getcdf(fb)
+                series = label + " (" + role + ")"
+                pylab.plot(x, y, lineformat, label=series)
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to first payment, all guard nanochannels")
+        pylab.title("time to first payment, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_payment_guard_ttclose(data, page):
+def plot_payment_ttclose(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["guard"]["ttclose"]:
-                fb.extend(d[client]["guard"]["ttclose"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
+        for role in ["guard, middle, exit"]:
+            fb = []
+            for client in d:
+                if f is None: f = pylab.figure()
+                for sec in d[client][role]["ttclose"]:
+                    fb.extend(d[client][role]["ttclose"][sec])
+            if f is not None and len(fb) > 0:
+                x, y = getcdf(fb)
+                series = label + " (" + role + ")"
+                pylab.plot(x, y, lineformat, label=series)
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to close, all guard nanochannels")
+        pylab.title("time to close, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
-
-def plot_payment_middle_numpayments(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["middle"]["numpayments"]:
-                fb.extend(d[client]["middle"]["numpayments"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Number of Payments (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("number of payments, all middle nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
-def plot_payment_middle_lifetime(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["middle"]["lifetime"]:
-                fb.extend(d[client]["middle"]["lifetime"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Elapsed Time (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("total lifetime, all middle nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
-def plot_payment_middle_ttestablish(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["middle"]["ttestablish"]:
-                fb.extend(d[client]["middle"]["ttestablish"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Elapsed Time (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to establish, all middle nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
-def plot_payment_middle_ttpayment(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["middle"]["ttpayment"]:
-                fb.extend(d[client]["middle"]["ttpayment"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Elapsed Time (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to first payment, all middle nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
-def plot_payment_middle_ttclose(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["middle"]["ttclose"]:
-                fb.extend(d[client]["middle"]["ttclose"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Elapsed Time (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to close, all middle nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
-def plot_payment_exit_numpayments(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["exit"]["numpayments"]:
-                fb.extend(d[client]["exit"]["numpayments"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Number of Payments (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("number of payments, all exit nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
-def plot_payment_exit_lifetime(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["exit"]["lifetime"]:
-                fb.extend(d[client]["exit"]["lifetime"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Elapsed Time (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("total lifetime, all exit nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
-def plot_payment_exit_ttestablish(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["exit"]["ttestablish"]:
-                fb.extend(d[client]["exit"]["ttestablish"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Elapsed Time (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to establish, all exit nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
-def plot_payment_exit_ttpayment(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["exit"]["ttpayment"]:
-                fb.extend(d[client]["exit"]["ttpayment"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Elapsed Time (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to first payment, all exit nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
-def plot_payment_exit_ttclose(data, page):
-    f = None
-
-    for (d, label, lineformat) in data:
-        fb = []
-        for client in d:
-            if f is None: f = pylab.figure()
-            for sec in d[client]["exit"]["ttclose"]:
-                fb.extend(d[client]["exit"]["ttclose"][sec])
-        if f is not None and len(fb) > 0:
-            x, y = getcdf(fb)
-            pylab.plot(x, y, lineformat, label=label)
-
-    if f is not None:
-        pylab.xlabel("Elapsed Time (s)")
-        pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to close, all exit nanochannels")
-        pylab.legend(loc="lower right")
-        page.savefig()
-        pylab.close()
-
 
 def get_data(experiments, lineformats, skiptime, rskiptime, hostpatternshadow, hostpatterntgen, hostpatterntor, hostpatternpayment):
     tickdata, shdata, ftdata, tgendata, tordata, paymentdata = [], [], [], [], [], []
