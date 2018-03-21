@@ -1110,16 +1110,16 @@ def plot_payment_numpayments(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        for role in ["guard, middle, exit"]:
+        for relaytype in ["guard", "middle", "exit"]:
             fb = []
             for client in d:
                 if f is None: f = pylab.figure()
-                for sec in d[client][role]["numpayments"]:
-                    fb.extend(d[client][role]["numpayments"][sec])
+                for sec in d[client][relaytype]["numpayments"]:
+                    fb.extend(d[client][relaytype]["numpayments"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = label + " (" + role + ")"
-                pylab.plot(x, y, lineformat, label=series)
+                series = relaytype + "(" + label + ")"
+                pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
         pylab.xlabel("Number of Payments (s)")
@@ -1133,16 +1133,16 @@ def plot_payment_lifetime(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        for role in ["guard, middle, exit"]:
+        for relaytype in ["guard", "middle", "exit"]:
             fb = []
             for client in d:
                 if f is None: f = pylab.figure()
-                for sec in d[client][role]["lifetime"]:
-                    fb.extend(d[client][role]["lifetime"][sec])
+                for sec in d[client][relaytype]["lifetime"]:
+                    fb.extend(d[client][relaytype]["lifetime"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = label + " (" + role + ")"
-                pylab.plot(x, y, lineformat, label=series)
+                series = relaytype + "(" + label + ")"
+                pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
@@ -1156,16 +1156,16 @@ def plot_payment_ttestablish(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        for role in ["guard, middle, exit"]:
+        for relaytype in ["guard", "middle", "exit"]:
             fb = []
             for client in d:
                 if f is None: f = pylab.figure()
-                for sec in d[client][role]["ttestablish"]:
-                    fb.extend(d[client][role]["ttestablish"][sec])
+                for sec in d[client][relaytype]["ttestablish"]:
+                    fb.extend(d[client][relaytype]["ttestablish"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = label + " (" + role + ")"
-                pylab.plot(x, y, lineformat, label=series)
+                series = relaytype + "(" + label + ")"
+                pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
@@ -1179,16 +1179,16 @@ def plot_payment_ttpayment(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        for role in ["guard, middle, exit"]:
+        for relaytype in ["guard", "middle", "exit"]:
             fb = []
             for client in d:
                 if f is None: f = pylab.figure()
-                for sec in d[client][role]["ttpayment"]:
-                    fb.extend(d[client][role]["ttpayment"][sec])
+                for sec in d[client][relaytype]["ttpayment"]:
+                    fb.extend(d[client][relaytype]["ttpayment"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = label + " (" + role + ")"
-                pylab.plot(x, y, lineformat, label=series)
+                series = relaytype + "(" + label + ")"
+                pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
@@ -1202,16 +1202,16 @@ def plot_payment_ttclose(data, page):
     f = None
 
     for (d, label, lineformat) in data:
-        for role in ["guard, middle, exit"]:
+        for relaytype in ["guard", "middle", "exit"]:
             fb = []
             for client in d:
                 if f is None: f = pylab.figure()
-                for sec in d[client][role]["ttclose"]:
-                    fb.extend(d[client][role]["ttclose"][sec])
+                for sec in d[client][relaytype]["ttclose"]:
+                    fb.extend(d[client][relaytype]["ttclose"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = label + " (" + role + ")"
-                pylab.plot(x, y, lineformat, label=series)
+                series = relaytype + "(" + label + ")"
+                pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
@@ -1276,7 +1276,8 @@ def get_data(experiments, lineformats, skiptime, rskiptime, hostpatternshadow, h
         data = json.load(xzcatp.stdout)
         data = prune_data(data, skiptime, rskiptime, hostpatternpayment)
         if 'nodes' in data and len(data['nodes']) > 0:
-            paymentdata.append((data['nodes'], label, lfcycle.next()))
+            lineformats = {"guard": lfcycle.next(), "middle": lfcycle.next(), "exit": lfcycle.next()}
+            paymentdata.append((data['nodes'], label, lineformats))
 
     return tickdata, shdata, ftdata, tgendata, tordata, paymentdata
 
