@@ -10,6 +10,10 @@ from re import search
 python parse-shadow.py --help
 """
 
+download_medians = []
+download_means = []
+total_throughput = []
+
 pylab.rcParams.update({
     'backend': 'PDF',
     'font.size': 16,
@@ -179,6 +183,7 @@ def main():
             plot_filetransfer_lastbyte_max(ftdata, page)
             plot_filetransfer_downloads(ftdata, page)
         if len(tgendata) > 0:
+            plot_tgen_throughput(tgendata, page)
             plot_tgen_firstbyte(tgendata, page)
             plot_tgen_lastbyte_all(tgendata, page)
             plot_tgen_lastbyte_median(tgendata, page)
@@ -752,6 +757,37 @@ def plot_filetransfer_downloads(data, page):
         pylab.xlabel("Downloads Completed (\#)")
         pylab.ylabel("Cumulative Fraction")
         pylab.title("number of {0} byte downloads completed, each client".format(bytes))
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_tgen_throughput(tgendata, page):
+
+    f = None
+
+    for (d, label, lineformat) in tgendata:
+        points = []
+        for node in d:
+            for transfer in d[node]['firstbyte']:
+                if f is None: f = pylab.figure()
+                size = float(transfer)/1048576.0
+                for time in d[node]['firstbyte'][transfer]:
+                    points += [(int(time), size)]
+
+        points = sorted(points) # sorts by first value of tuple
+        x = [i for i in range(points[0][0], points[-1][0] + 1)]
+        y = [0] * len(x)
+
+        for p in points:
+            y[p[0] - x[0]] += p[1]
+
+        y_ma = movingaverage(y, 60)
+        pylab.plot(x, y_ma, lineformat, label=label)
+
+    if f is not None:
+        pylab.xlabel("Tick (s)")
+        pylab.ylabel("Throughput (MiB/s)")
+        pylab.title("60 second moving average throughput tgen, all nodes")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
