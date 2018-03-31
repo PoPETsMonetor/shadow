@@ -167,6 +167,7 @@ def main():
     tickdata, shdata, ftdata, tgendata, tordata, paymentdata = get_data(args.experiments, args.lineformats, args.skiptime, args.rskiptime, args.hostpatternshadow, args.hostpatterntgen, args.hostpatterntor, args.hostpatternpayment)
 
     page = PdfPages("{0}shadow.results.pdf".format(args.prefix+'.' if args.prefix is not None else ''))
+    info = open("{0}shadow.info.txt".format(args.prefix+'.' if args.prefix is not None else ''), 'wb')
     # use a try block in case there are errors, the PDF will still be openable
     try:
         if len(tickdata) > 0:
@@ -185,7 +186,7 @@ def main():
         if len(tgendata) > 0:
             plot_tgen_throughput(tgendata, page)
             plot_tgen_firstbyte(tgendata, page)
-            plot_tgen_lastbyte_all(tgendata, page)
+            plot_tgen_lastbyte_all(tgendata, page, info)
             plot_tgen_lastbyte_median(tgendata, page)
             plot_tgen_lastbyte_mean(tgendata, page)
             plot_tgen_lastbyte_max(tgendata, page)
@@ -207,9 +208,11 @@ def main():
             plot_payment_ttclose(paymentdata, page)
     except:
         page.close()
+        info.close()
         print >>sys.stderr, "!! there was an error while plotting, but some graphs may still be readable"
         raise
     page.close()
+    info.close()
 
 def plot_shadow_time(datasource, page):
     pylab.figure()
@@ -814,7 +817,7 @@ def plot_tgen_firstbyte(data, page):
         page.savefig()
         pylab.close()
 
-def plot_tgen_lastbyte_all(data, page):
+def plot_tgen_lastbyte_all(data, page, info):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -830,6 +833,13 @@ def plot_tgen_lastbyte_all(data, page):
             x, y = getcdf(lb[bytes])
             pylab.figure(figs[bytes].number)
             pylab.plot(x, y, lineformat, label=label)
+
+            if x and y:
+                info.write("--- global transfer info - {0}, {1} bytes ---\n".format(label, bytes))
+                info.write("mean time to last byte (s): {0}\n".format(numpy.mean(x)))
+                info.write("median time to last byte (s): {0}\n".format(numpy.median(x)))
+                info.write("total throughput (MiB): {0}\n ".format(int(bytes/1048576.0 * len(x))))
+                info.write("\n");
 
     for bytes in sorted(figs.keys()):
         pylab.figure(figs[bytes].number)
