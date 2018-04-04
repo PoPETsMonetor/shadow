@@ -784,7 +784,7 @@ def plot_tgen_throughput(tgendata, page):
         for p in points:
             y[p[0] - x[0]] += p[1]
 
-        y_ma = movingaverage(y, 60)
+        y_ma = movingaverage(y, 300)
         pylab.plot(x, y_ma, lineformat, label=label)
 
     if f is not None:
