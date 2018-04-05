@@ -205,6 +205,7 @@ def main():
             plot_payment_lifetime(paymentdata, page)
             plot_payment_ttestablish(paymentdata, page)
             plot_payment_ttpayment(paymentdata, page)
+            plot_payment_ttpaysuccess(paymentdata, page)
             plot_payment_ttclose(paymentdata, page)
     except:
         page.close()
@@ -1231,6 +1232,29 @@ def plot_payment_ttpayment(data, page):
                 if f is None: f = pylab.figure()
                 for sec in d[client][relaytype]["ttpayment"]:
                     fb.extend(d[client][relaytype]["ttpayment"][sec])
+            if f is not None and len(fb) > 0:
+                x, y = getcdf(fb)
+                series = relaytype + "(" + label + ")"
+                pylab.plot(x, y, lineformat[relaytype], label=series)
+
+    if f is not None:
+        pylab.xlabel("Elapsed Time (s)")
+        pylab.ylabel("Cumulative Fraction")
+        pylab.title("time to complete payment, all nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_payment_ttpaysuccess(data, page):
+    f = None
+
+    for (d, label, lineformat) in data:
+        for relaytype in ["guard", "middle", "exit"]:
+            fb = []
+            for client in d:
+                if f is None: f = pylab.figure()
+                for sec in d[client][relaytype]["ttpaysuccess"]:
+                    fb.extend(d[client][relaytype]["ttpaysuccess"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
                 series = relaytype + "(" + label + ")"
