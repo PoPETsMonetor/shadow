@@ -819,7 +819,7 @@ def plot_tgen_firstbyte(data, page):
         pylab.close()
 
 def plot_tgen_lastbyte_all(data, page, info):
-    figs = {}
+    figs = {'combined': pylab.figure()}
 
     for (d, label, lineformat) in data:
         lb = {}
@@ -834,6 +834,8 @@ def plot_tgen_lastbyte_all(data, page, info):
             x, y = getcdf(lb[bytes])
             pylab.figure(figs[bytes].number)
             pylab.plot(x, y, lineformat, label=label)
+            pylab.figure(figs['combined'].number)
+            pylab.plot(x, y, lineformat, label=label)
 
             if x and y:
                 info.write("--- global transfer info - {0}, {1} bytes ---\n".format(label, bytes))
@@ -842,11 +844,14 @@ def plot_tgen_lastbyte_all(data, page, info):
                 info.write("total throughput (MiB): {0}\n ".format(int(bytes/1048576.0 * len(x))))
                 info.write("\n");
 
-    for bytes in sorted(figs.keys()):
-        pylab.figure(figs[bytes].number)
+    for key in sorted(figs.keys()):
+        pylab.figure(figs[key].number)
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to download {0} bytes, all downloads".format(bytes))
+        if key == 'combined':
+            pylab.title("time to download last byte, all downloads")
+        else:
+            pylab.title("time to download {0} bytes, all downloads".format(key))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
