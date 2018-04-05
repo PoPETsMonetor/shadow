@@ -790,7 +790,7 @@ def plot_tgen_throughput(tgendata, page):
     if f is not None:
         pylab.xlabel("Tick (s)")
         pylab.ylabel("Throughput (MiB/s)")
-        pylab.title("60 second moving average throughput tgen, all nodes")
+        pylab.title("5 minute moving average throughput tgen, all nodes")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
