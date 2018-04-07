@@ -28,6 +28,10 @@ pylab.rcParams.update({
     'axes.titlesize' : 'small',
     'axes.labelsize' : 'small',
     'axes.formatter.limits': (-4,4),
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'xtick.major.width' : 0,
+    'ytick.major.width' : 0,
     'xtick.labelsize' : 'small',
     'ytick.labelsize' : 'small',
     'lines.linewidth' : 2.0,
@@ -36,6 +40,7 @@ pylab.rcParams.update({
     'legend.fontsize' : 'x-small',
     'legend.fancybox' : False,
     'legend.shadow' : False,
+    'legend.edgecolor' : 'none',
     'legend.borderaxespad' : 0.5,
     'legend.numpoints' : 1,
     'legend.handletextpad' : 0.5,
@@ -155,6 +160,10 @@ def main():
         metavar="PATTERN",
         default="client")
 
+    parser.add_argument('--no-title',
+        help="""Plot all graphs without a title""",
+        action="store_true", dest="notitle", default=0)
+
     args = parser.parse_args()
     conf = args.shadow_config
 
@@ -171,42 +180,42 @@ def main():
     # use a try block in case there are errors, the PDF will still be openable
     try:
         if len(tickdata) > 0:
-            plot_shadow_time(tickdata, page)
-            plot_shadow_ram(tickdata, page)
+            plot_shadow_time(tickdata, page, args)
+            plot_shadow_ram(tickdata, page, args)
         if len(shdata) > 0:
-            plot_shadow_packets(shdata, page, direction="recv")
-            plot_shadow_packets(shdata, page, direction="send")
+            plot_shadow_packets(shdata, page, args, direction="recv")
+            plot_shadow_packets(shdata, page, args, direction="send")
         if len(ftdata) > 0:
-            plot_filetransfer_firstbyte(ftdata, page)
-            plot_filetransfer_lastbyte_all(ftdata, page)
-            plot_filetransfer_lastbyte_median(ftdata, page)
-            plot_filetransfer_lastbyte_mean(ftdata, page)
-            plot_filetransfer_lastbyte_max(ftdata, page)
-            plot_filetransfer_downloads(ftdata, page)
+            plot_filetransfer_firstbyte(ftdata, page, args)
+            plot_filetransfer_lastbyte_all(ftdata, page, args)
+            plot_filetransfer_lastbyte_median(ftdata, page, args)
+            plot_filetransfer_lastbyte_mean(ftdata, page, args)
+            plot_filetransfer_lastbyte_max(ftdata, page, args)
+            plot_filetransfer_downloads(ftdata, page, args)
         if len(tgendata) > 0:
-            plot_tgen_throughput(tgendata, page)
-            plot_tgen_firstbyte(tgendata, page)
-            plot_tgen_lastbyte_all(tgendata, page, info)
-            plot_tgen_lastbyte_median(tgendata, page)
-            plot_tgen_lastbyte_mean(tgendata, page)
-            plot_tgen_lastbyte_max(tgendata, page)
-            plot_tgen_downloads(tgendata, page)
-            plot_tgen_errors(tgendata, page)
-            plot_tgen_errsizes_all(tgendata, page)
-            plot_tgen_errsizes_median(tgendata, page)
-            plot_tgen_errsizes_mean(tgendata, page)
+            plot_tgen_throughput(tgendata, page, args)
+            plot_tgen_firstbyte(tgendata, page, args)
+            plot_tgen_lastbyte_all(tgendata, page, info, args)
+            plot_tgen_lastbyte_median(tgendata, page, args)
+            plot_tgen_lastbyte_mean(tgendata, page, args)
+            plot_tgen_lastbyte_max(tgendata, page, args)
+            plot_tgen_downloads(tgendata, page, args)
+            plot_tgen_errors(tgendata, page, args)
+            plot_tgen_errsizes_all(tgendata, page, args)
+            plot_tgen_errsizes_median(tgendata, page, args)
+            plot_tgen_errsizes_mean(tgendata, page, args)
         if len(tordata) > 0:
             capacities = get_relay_capacities(conf, bwdown=True) if conf is not None else None
-            plot_tor(tordata, page, capacities=capacities, direction="bytes_read")
+            plot_tor(tordata, page, args, capacities=capacities, direction="bytes_read")
             capacities = get_relay_capacities(conf, bwup=True) if conf is not None else None
-            plot_tor(tordata, page, capacities=capacities, direction="bytes_written")
+            plot_tor(tordata, page, args, capacities=capacities, direction="bytes_written")
         if len(paymentdata) > 0:
-            plot_payment_numpayments(paymentdata, page)
-            plot_payment_lifetime(paymentdata, page)
-            plot_payment_ttestablish(paymentdata, page)
-            plot_payment_ttpayment(paymentdata, page)
-            plot_payment_ttpaysuccess(paymentdata, page)
-            plot_payment_ttclose(paymentdata, page)
+            plot_payment_numpayments(paymentdata, page, args)
+            plot_payment_lifetime(paymentdata, page, args)
+            plot_payment_ttestablish(paymentdata, page, args)
+            plot_payment_ttpayment(paymentdata, page, args)
+            plot_payment_ttpaysuccess(paymentdata, page, args)
+            plot_payment_ttclose(paymentdata, page, args)
     except:
         page.close()
         info.close()
@@ -215,7 +224,7 @@ def main():
     page.close()
     info.close()
 
-def plot_shadow_time(datasource, page):
+def plot_shadow_time(datasource, page, args):
     pylab.figure()
 
     for (d, label, lineformat) in datasource:
@@ -227,12 +236,12 @@ def plot_shadow_time(datasource, page):
 
     pylab.xlabel("Tick (s)")
     pylab.ylabel("Real Time (h)")
-    pylab.title("simulation run time")
+    if not args.notitle: pylab.title("simulation run time")
     pylab.legend(loc="upper left")
     page.savefig()
     pylab.close()
 
-def plot_shadow_ram(datasource, page):
+def plot_shadow_ram(datasource, page, args):
     pylab.figure()
 
     for (d, label, lineformat) in datasource:
@@ -244,12 +253,12 @@ def plot_shadow_ram(datasource, page):
 
     pylab.xlabel("Tick (s)")
     pylab.ylabel("Maximum Resident Set Size (GiB)")
-    pylab.title("simulation memory usage")
+    if not args.notitle: pylab.title("simulation memory usage")
     pylab.legend(loc="upper left")
     page.savefig()
     pylab.close()
 
-def plot_shadow_packets(datasource, page, direction="send"):
+def plot_shadow_packets(datasource, page, args, direction="send"):
     total_all_mafig, total_all_cdffig, total_each_cdffig = pylab.figure(), pylab.figure(), pylab.figure()
     data_all_mafig, data_all_cdffig, data_each_cdffig = pylab.figure(), pylab.figure(), pylab.figure()
     control_all_mafig, control_all_cdffig, control_each_cdffig = pylab.figure(), pylab.figure(), pylab.figure()
@@ -411,7 +420,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.ylabel("Throughput (MiB/s)")
     pylab.xlim(xmin=0.0)
     pylab.ylim(ymin=0.0)
-    pylab.title("60 second moving average throughput, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("60 second moving average throughput, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -420,7 +429,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.figure(total_all_cdffig.number)
     pylab.xlabel("Throughput (MiB/s)")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second throughput, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("1 second throughput, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -430,7 +439,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     #pylab.xscale('log')
     pylab.xlabel("Throughput (MiB/s)")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second throughput, {0}, each node".format(direction))
+    if not args.notitle: pylab.title("1 second throughput, {0}, each node".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -441,7 +450,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.ylabel("Goodput (MiB/s)")
     pylab.xlim(xmin=0.0)
     pylab.ylim(ymin=0.0)
-    pylab.title("60 second moving average goodput, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("60 second moving average goodput, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -450,7 +459,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.figure(data_all_cdffig.number)
     pylab.xlabel("Goodput (MiB/s)")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second goodput, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("1 second goodput, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -460,7 +469,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     #pylab.xscale('log')
     pylab.xlabel("Goodput")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second goodput, {0}, each node".format(direction))
+    if not args.notitle: pylab.title("1 second goodput, {0}, each node".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -471,7 +480,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.ylabel("Goodput / Throughput")
     pylab.xlim(xmin=0.0)
     pylab.ylim(ymin=0.0)
-    pylab.title("60 second moving average fractional goodput, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("60 second moving average fractional goodput, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -480,7 +489,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.figure(fracdata_all_cdffig.number)
     pylab.xlabel("Goodput / Throughput")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second fractional goodput, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("1 second fractional goodput, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -490,7 +499,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     #pylab.xscale('log')
     pylab.xlabel("Goodput / Throughput")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second fractional goodput, {0}, each node".format(direction))
+    if not args.notitle: pylab.title("1 second fractional goodput, {0}, each node".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -501,7 +510,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.ylabel("Control Overhead (MiB/s)")
     pylab.xlim(xmin=0.0)
     pylab.ylim(ymin=0.0)
-    pylab.title("60 second moving average control overhead, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("60 second moving average control overhead, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -510,7 +519,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.figure(control_all_cdffig.number)
     pylab.xlabel("Control Overhead (MiB/s)")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second control overhead, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("1 second control overhead, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -520,7 +529,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     #pylab.xscale('log')
     pylab.xlabel("Control Overhead")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second control overhead, {0}, each node".format(direction))
+    if not args.notitle: pylab.title("1 second control overhead, {0}, each node".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -531,7 +540,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.ylabel("Control Overhead / Throughput")
     pylab.xlim(xmin=0.0)
     pylab.ylim(ymin=0.0)
-    pylab.title("60 second moving average fractional control overhead, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("60 second moving average fractional control overhead, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -540,7 +549,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.figure(fraccontrol_all_cdffig.number)
     pylab.xlabel("Control Overhead / Throughput")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second fractional control overhead, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("1 second fractional control overhead, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -550,7 +559,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     #pylab.xscale('log')
     pylab.xlabel("Control Overhead / Throughput")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second fractional control overhead, {0}, each node".format(direction))
+    if not args.notitle: pylab.title("1 second fractional control overhead, {0}, each node".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -561,7 +570,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.ylabel("Retransmission Overhead (MiB/s)")
     pylab.xlim(xmin=0.0)
     pylab.ylim(ymin=0.0)
-    pylab.title("60 second moving average retrans overhead, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("60 second moving average retrans overhead, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -570,7 +579,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.figure(retrans_all_cdffig.number)
     pylab.xlabel("Retransmission Overhead (MiB/s)")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second retrans overhead, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("1 second retrans overhead, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -580,7 +589,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     #pylab.xscale('log')
     pylab.xlabel("Retransmission Overhead")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second retrans overhead, {0}, each node".format(direction))
+    if not args.notitle: pylab.title("1 second retrans overhead, {0}, each node".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -591,7 +600,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.ylabel("Retransmission Overhead / Throughput")
     pylab.xlim(xmin=0.0)
     pylab.ylim(ymin=0.0)
-    pylab.title("60 second moving average fractional retrans overhead, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("60 second moving average fractional retrans overhead, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -600,7 +609,7 @@ def plot_shadow_packets(datasource, page, direction="send"):
     pylab.figure(fracretrans_all_cdffig.number)
     pylab.xlabel("Retransmission Overhead / Throughput")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second fractional retrans overhead, {0}, all nodes".format(direction))
+    if not args.notitle: pylab.title("1 second fractional retrans overhead, {0}, all nodes".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -610,13 +619,13 @@ def plot_shadow_packets(datasource, page, direction="send"):
     #pylab.xscale('log')
     pylab.xlabel("Retransmission Overhead / Throughput")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second fractional retrans overhead, {0}, each node".format(direction))
+    if not args.notitle: pylab.title("1 second fractional retrans overhead, {0}, each node".format(direction))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
     del(fracretrans_each_cdffig)
 
-def plot_filetransfer_firstbyte(data, page):
+def plot_filetransfer_firstbyte(data, page, args):
     pylab.figure()
 
     for (d, label, lineformat) in data:
@@ -630,12 +639,12 @@ def plot_filetransfer_firstbyte(data, page):
 
     pylab.xlabel("Download Time (s)")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("time to download first byte, all clients")
+    if not args.notitle: pylab.title("time to download first byte, all clients")
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
 
-def plot_filetransfer_lastbyte_all(data, page):
+def plot_filetransfer_lastbyte_all(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -656,12 +665,12 @@ def plot_filetransfer_lastbyte_all(data, page):
         pylab.figure(figs[bytes].number)
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to download {0} bytes, all downloads".format(bytes))
+        if not args.notitle: pylab.title("time to download {0} bytes, all downloads".format(bytes))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_filetransfer_lastbyte_median(data, page):
+def plot_filetransfer_lastbyte_median(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -682,12 +691,12 @@ def plot_filetransfer_lastbyte_median(data, page):
         pylab.figure(figs[bytes].number)
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("median time to download {0} bytes, each client".format(bytes))
+        if not args.notitle: pylab.title("median time to download {0} bytes, each client".format(bytes))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_filetransfer_lastbyte_mean(data, page):
+def plot_filetransfer_lastbyte_mean(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -708,12 +717,12 @@ def plot_filetransfer_lastbyte_mean(data, page):
         pylab.figure(figs[bytes].number)
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("mean time to download {0} bytes, each client".format(bytes))
+        if not args.notitle: pylab.title("mean time to download {0} bytes, each client".format(bytes))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_filetransfer_lastbyte_max(data, page):
+def plot_filetransfer_lastbyte_max(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -734,12 +743,12 @@ def plot_filetransfer_lastbyte_max(data, page):
         pylab.figure(figs[bytes].number)
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("max time to download {0} bytes, each client".format(bytes))
+        if not args.notitle: pylab.title("max time to download {0} bytes, each client".format(bytes))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_filetransfer_downloads(data, page):
+def plot_filetransfer_downloads(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -760,12 +769,12 @@ def plot_filetransfer_downloads(data, page):
         pylab.figure(figs[bytes].number)
         pylab.xlabel("Downloads Completed (\#)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("number of {0} byte downloads completed, each client".format(bytes))
+        if not args.notitle: pylab.title("number of {0} byte downloads completed, each client".format(bytes))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_throughput(tgendata, page):
+def plot_tgen_throughput(tgendata, page, args):
 
     f = None
 
@@ -786,17 +795,18 @@ def plot_tgen_throughput(tgendata, page):
             y[p[0] - x[0]] += p[1]
 
         y_ma = movingaverage(y, 300)
-        pylab.plot(x, y_ma, lineformat, label=label)
+        x_rel = [x_i - x[0] for x_i in x]
+        pylab.plot(x_rel, y_ma, lineformat, label=label)
 
     if f is not None:
         pylab.xlabel("Tick (s)")
         pylab.ylabel("Throughput (MiB/s)")
-        pylab.title("5 minute moving average throughput tgen, all nodes")
+        if not args.notitle: pylab.title("5 minute moving average throughput tgen, all nodes")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_firstbyte(data, page):
+def plot_tgen_firstbyte(data, page, args):
     f = None
 
     for (d, label, lineformat) in data:
@@ -813,12 +823,12 @@ def plot_tgen_firstbyte(data, page):
     if f is not None:
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to download first byte, all clients")
+        if not args.notitle: pylab.title("time to download first byte, all clients")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_lastbyte_all(data, page, info):
+def plot_tgen_lastbyte_all(data, page, info, args):
     figs = {'combined': pylab.figure()}
 
     for (d, label, lineformat) in data:
@@ -849,14 +859,14 @@ def plot_tgen_lastbyte_all(data, page, info):
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
         if key == 'combined':
-            pylab.title("time to download last byte, all downloads")
+            if not args.notitle: pylab.title("time to download last byte, all downloads")
         else:
-            pylab.title("time to download {0} bytes, all downloads".format(key))
+            if not args.notitle: pylab.title("time to download {0} bytes, all downloads".format(key))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_lastbyte_median(data, page):
+def plot_tgen_lastbyte_median(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -879,12 +889,12 @@ def plot_tgen_lastbyte_median(data, page):
         pylab.figure(figs[bytes].number)
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("median time to download {0} bytes, each client".format(bytes))
+        if not args.notitle: pylab.title("median time to download {0} bytes, each client".format(bytes))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_lastbyte_mean(data, page):
+def plot_tgen_lastbyte_mean(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -907,12 +917,12 @@ def plot_tgen_lastbyte_mean(data, page):
         pylab.figure(figs[bytes].number)
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("mean time to download {0} bytes, each client".format(bytes))
+        if not args.notitle: pylab.title("mean time to download {0} bytes, each client".format(bytes))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_lastbyte_max(data, page):
+def plot_tgen_lastbyte_max(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -935,12 +945,12 @@ def plot_tgen_lastbyte_max(data, page):
         pylab.figure(figs[bytes].number)
         pylab.xlabel("Download Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("max time to download {0} bytes, each client".format(bytes))
+        if not args.notitle: pylab.title("max time to download {0} bytes, each client".format(bytes))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_downloads(data, page):
+def plot_tgen_downloads(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -962,12 +972,12 @@ def plot_tgen_downloads(data, page):
         pylab.figure(figs[bytes].number)
         pylab.xlabel("Downloads Completed (\#)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("number of {0} byte downloads completed, each client".format(bytes))
+        if not args.notitle: pylab.title("number of {0} byte downloads completed, each client".format(bytes))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_errors(data, page):
+def plot_tgen_errors(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -988,12 +998,12 @@ def plot_tgen_errors(data, page):
         pylab.figure(figs[code].number)
         pylab.xlabel("Download Errors (\#)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("number of transfer {0} errors, each client".format(code))
+        if not args.notitle: pylab.title("number of transfer {0} errors, each client".format(code))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_errsizes_all(data, page):
+def plot_tgen_errsizes_all(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -1016,12 +1026,12 @@ def plot_tgen_errsizes_all(data, page):
         pylab.figure(figs[code].number)
         pylab.xlabel("Data Transferred (KiB)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("bytes transferred before {0} error, all downloads".format(code))
+        if not args.notitle: pylab.title("bytes transferred before {0} error, all downloads".format(code))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_errsizes_median(data, page):
+def plot_tgen_errsizes_median(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -1044,12 +1054,12 @@ def plot_tgen_errsizes_median(data, page):
         pylab.figure(figs[code].number)
         pylab.xlabel("Data Transferred (KiB)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("median bytes transferred before {0} error, each client".format(code))
+        if not args.notitle: pylab.title("median bytes transferred before {0} error, each client".format(code))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tgen_errsizes_mean(data, page):
+def plot_tgen_errsizes_mean(data, page, args):
     figs = {}
 
     for (d, label, lineformat) in data:
@@ -1072,12 +1082,12 @@ def plot_tgen_errsizes_mean(data, page):
         pylab.figure(figs[code].number)
         pylab.xlabel("Data Transferred (KiB)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("mean bytes transferred before {0} error, each client".format(code))
+        if not args.notitle: pylab.title("mean bytes transferred before {0} error, each client".format(code))
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_tor(data, page, capacities=None, direction="bytes_written"):
+def plot_tor(data, page, args, capacities=None, direction="bytes_written"):
     mafig = pylab.figure()
     allcdffig = pylab.figure()
     eachcdffig = pylab.figure()
@@ -1123,7 +1133,7 @@ def plot_tor(data, page, capacities=None, direction="bytes_written"):
     pylab.ylabel("Throughput (MiB/s)")
     pylab.xlim(xmin=0.0)
     pylab.ylim(ymin=0.0)
-    pylab.title("60 second moving average throughput, {0}, all relays".format("write" if direction == "bytes_written" else "read"))
+    if not args.notitle: pylab.title("60 second moving average throughput, {0}, all relays".format("write" if direction == "bytes_written" else "read"))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -1132,7 +1142,7 @@ def plot_tor(data, page, capacities=None, direction="bytes_written"):
     pylab.figure(allcdffig.number)
     pylab.xlabel("Throughput (MiB/s)")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second throughput, {0}, all relays".format("write" if direction == "bytes_written" else "read"))
+    if not args.notitle: pylab.title("1 second throughput, {0}, all relays".format("write" if direction == "bytes_written" else "read"))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -1142,7 +1152,7 @@ def plot_tor(data, page, capacities=None, direction="bytes_written"):
     #pylab.xscale('log')
     pylab.xlabel("Throughput (MiB/s)")
     pylab.ylabel("Cumulative Fraction")
-    pylab.title("1 second throughput, {0}, each relay".format("write" if direction == "bytes_written" else "read"))
+    if not args.notitle: pylab.title("1 second throughput, {0}, each relay".format("write" if direction == "bytes_written" else "read"))
     pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
@@ -1158,7 +1168,7 @@ def plot_tor(data, page, capacities=None, direction="bytes_written"):
         pylab.close()
         del(capsfig)
 
-def plot_payment_numpayments(data, page):
+def plot_payment_numpayments(data, page, args):
     f = None
 
     for (d, label, lineformat) in data:
@@ -1176,12 +1186,12 @@ def plot_payment_numpayments(data, page):
     if f is not None:
         pylab.xlabel("Number of Payments (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("number of payments, all nanochannels")
+        if not args.notitle: pylab.title("number of payments, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_payment_lifetime(data, page):
+def plot_payment_lifetime(data, page, args):
     f = None
 
     for (d, label, lineformat) in data:
@@ -1199,12 +1209,12 @@ def plot_payment_lifetime(data, page):
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("total lifetime, all nanochannels")
+        if not args.notitle: pylab.title("total lifetime, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_payment_ttestablish(data, page):
+def plot_payment_ttestablish(data, page, args):
     f = None
 
     for (d, label, lineformat) in data:
@@ -1222,12 +1232,12 @@ def plot_payment_ttestablish(data, page):
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to establish, all nanochannels")
+        if not args.notitle: pylab.title("time to establish, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_payment_ttpayment(data, page):
+def plot_payment_ttpayment(data, page, args):
     f = None
 
     for (d, label, lineformat) in data:
@@ -1245,12 +1255,12 @@ def plot_payment_ttpayment(data, page):
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to complete payment, all nanochannels")
+        if not args.notitle: pylab.title("time to complete payment, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_payment_ttpaysuccess(data, page):
+def plot_payment_ttpaysuccess(data, page, args):
     f = None
 
     for (d, label, lineformat) in data:
@@ -1268,12 +1278,12 @@ def plot_payment_ttpaysuccess(data, page):
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to first payment, all nanochannels")
+        if not args.notitle: pylab.title("time to first payment, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
 
-def plot_payment_ttclose(data, page):
+def plot_payment_ttclose(data, page, args):
     f = None
 
     for (d, label, lineformat) in data:
@@ -1291,7 +1301,7 @@ def plot_payment_ttclose(data, page):
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
-        pylab.title("time to close, all nanochannels")
+        if not args.notitle: pylab.title("time to close, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
