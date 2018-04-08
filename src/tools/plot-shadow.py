@@ -164,6 +164,11 @@ def main():
         help="""Plot all graphs without a title""",
         action="store_true", dest="notitle", default=0)
 
+    parser.add_argument('--graph-origin',
+        help="""Plot all graphs with the scale set to include the origin""",
+        action="store_true", dest="graphorigin", default=0)
+
+
     args = parser.parse_args()
     conf = args.shadow_config
 
@@ -797,6 +802,7 @@ def plot_tgen_throughput(tgendata, page, args):
         y_ma = movingaverage(y, 300)
         x_rel = [x_i - x[0] for x_i in x]
         pylab.plot(x_rel, y_ma, lineformat, label=label)
+        pylab.xlim(xmin=0)
 
     if f is not None:
         pylab.xlabel("Tick (s)")
@@ -1180,7 +1186,7 @@ def plot_payment_numpayments(data, page, args):
                     fb.extend(d[client][relaytype]["numpayments"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + "(" + label + ")"
+                series = relaytype + " (" + label + ")"
                 pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
@@ -1203,7 +1209,7 @@ def plot_payment_lifetime(data, page, args):
                     fb.extend(d[client][relaytype]["lifetime"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + "(" + label + ")"
+                series = relaytype + " (" + label + ")"
                 pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
@@ -1226,7 +1232,7 @@ def plot_payment_ttestablish(data, page, args):
                     fb.extend(d[client][relaytype]["ttestablish"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + "(" + label + ")"
+                series = relaytype + " (" + label + ")"
                 pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
@@ -1249,7 +1255,7 @@ def plot_payment_ttpayment(data, page, args):
                     fb.extend(d[client][relaytype]["ttpayment"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + "(" + label + ")"
+                series = relaytype + " (" + label + ")"
                 pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
@@ -1272,7 +1278,7 @@ def plot_payment_ttpaysuccess(data, page, args):
                     fb.extend(d[client][relaytype]["ttpaysuccess"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + "(" + label + ")"
+                series = relaytype + " (" + label + ")"
                 pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
@@ -1295,7 +1301,7 @@ def plot_payment_ttclose(data, page, args):
                     fb.extend(d[client][relaytype]["ttclose"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + "(" + label + ")"
+                series = relaytype + " (" + label + ")"
                 pylab.plot(x, y, lineformat[relaytype], label=series)
 
     if f is not None:
