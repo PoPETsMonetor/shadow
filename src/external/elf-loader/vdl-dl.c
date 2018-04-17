@@ -226,6 +226,9 @@ dlopen_with_context (struct VdlContext *context, const char *filename,
       goto error;
     }
 
+  // we have to track the tls lock here, because we can't update any threads
+  // until the symbols are resolved (tls templates are symbols)
+  write_lock (g_vdl.tls_lock);
   bool ok = vdl_tls_file_initialize (map.newly_mapped);
 
   if (!ok)
@@ -235,6 +238,7 @@ dlopen_with_context (struct VdlContext *context, const char *filename,
       // how to handle them because that would require
       // adding space to the already-allocated static tls
       // which, by definition, can't be deallocated.
+      write_unlock (g_vdl.tls_lock);
       set_error
         ("Attempting to dlopen a file with a static tls block which is bigger than the space available");
       goto error;
@@ -298,18 +302,10 @@ dlopen_with_context (struct VdlContext *context, const char *filename,
     }
   vdl_list_delete (scope);
 
-
   vdl_reloc (map.newly_mapped, g_vdl.bind_now || flags & RTLD_NOW);
+  write_unlock (g_vdl.tls_lock);
 
-  // now, we want to update the dtv of _this_ thread.
-  // i.e., we can't touch the dtv of the other threads
-  // because of locking issues so, if the code we loaded
-  // uses the tls direct model to access the static block
-  // and if any of the other threads try to call in this code
-  // and if it tries to access the static tls block directly,
-  // BOOOOM. nasty. anyway, we protect the caller if it tries to
-  // access these tls static blocks by updating the dtv forcibly here
-  // this indirectly initializes the content of the tls static area.
+  // now safe to update tls
   vdl_tls_dtv_update ();
 
   glibc_patch (map.newly_mapped);
@@ -382,8 +378,8 @@ vdl_dlopen (const char *filename, int flags, unsigned long caller)
 void *
 vdl_dlsym (void *handle, const char *symbol, unsigned long caller)
 {
-  VDL_LOG_FUNCTION ("handle=0x%llx, symbol=%s, caller=0x%llx", handle, symbol,
-                    caller);
+  VDL_LOG_FUNCTION ("handle=%p, symbol=%s, caller=%p", handle, symbol,
+                    (void *) caller);
   return vdl_dlvsym (handle, symbol, 0, caller);
 }
 
@@ -408,13 +404,13 @@ remove_from_scopes (struct VdlList *files, struct VdlFile *file)
 int
 vdl_dlclose (void *handle)
 {
-  VDL_LOG_FUNCTION ("handle=0x%llx", handle);
+  VDL_LOG_FUNCTION ("handle=%p", handle);
   write_lock (g_vdl.global_lock);
 
   struct VdlFile *file = vdl_search_file (handle);
   if (file == 0)
     {
-      set_error ("Can't find requested file 0x%x", handle);
+      set_error ("Can't find requested file %p", handle);
       write_unlock (g_vdl.global_lock);
       return -1;
     }
@@ -483,7 +479,7 @@ vdl_dladdr1 (const void *addr, Dl_info *info, void **extra_info, int flags)
   struct VdlFile *file = vdl_addr_to_file ((unsigned long) addr);
   if (file == 0)
     {
-      set_error ("No object contains 0x%lx", addr);
+      set_error ("No object contains %p", addr);
       goto error;
     }
   if (info == 0)
@@ -606,8 +602,9 @@ void *
 vdl_dlvsym_with_flags (void *handle, const char *symbol, const char *version,
                        unsigned long flags, unsigned long caller)
 {
-  VDL_LOG_FUNCTION ("handle=0x%llx, symbol=%s, version=%s, caller=0x%llx",
-                    handle, symbol, (version == 0) ? "" : version, caller);
+  VDL_LOG_FUNCTION ("handle=%p, symbol=%s, version=%s, caller=%p",
+                    handle, symbol, (version == 0) ? "" : version,
+                    (void *) caller);
   read_lock (g_vdl.global_lock);
   struct VdlList *scope;
   struct VdlFile *caller_file = vdl_addr_to_file (caller);
@@ -647,7 +644,7 @@ vdl_dlvsym_with_flags (void *handle, const char *symbol, const char *version,
       struct VdlFile *file = vdl_search_file (handle);
       if (file == 0)
         {
-          set_error ("Can't find requested file 0x%x", handle);
+          set_error ("Can't find requested file %p", handle);
           goto error;
         }
       context = file->context;
@@ -764,7 +761,7 @@ vdl_dlinfo (void *handle, int request, void *p)
       struct VdlFile *file = vdl_search_file (handle);
       if (file == 0)
         {
-          set_error ("Can't find requested file 0x%x", handle);
+          set_error ("Can't find requested file %p", handle);
           goto error;
         }
       if (request == RTLD_DI_LMID)
@@ -933,16 +930,16 @@ int
 vdl_dl_lmid_swap_tls (Lmid_t lmid, pthread_t *t1, pthread_t *t2)
 {
   VDL_LOG_FUNCTION ("", 0);
-  read_lock (g_vdl.global_lock);
+  write_lock (g_vdl.global_lock);
   struct VdlContext *context = (struct VdlContext *) lmid;
   if (search_context (context) == 0)
     {
       goto error;
     }
   vdl_tls_swap_context (context, (unsigned long) *t1, (unsigned long) *t2);
-  read_unlock (g_vdl.global_lock);
+  write_unlock (g_vdl.global_lock);
   return 0;
 error:
-  read_unlock (g_vdl.global_lock);
+  write_unlock (g_vdl.global_lock);
   return -1;
 }

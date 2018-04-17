@@ -301,7 +301,7 @@ static void _process_updateErrnoLocation(Process* proc) {
     gpointer symbol = dlsym(proc->plugin.handle, PLUGIN_ERRNOLOC_SYMBOL);
     if(symbol) {
         proc->plugin.errnoGetLocation = symbol;
-        message("found '%s' at %p", PLUGIN_ERRNOLOC_SYMBOL, symbol);
+        info("found '%s' at %p", PLUGIN_ERRNOLOC_SYMBOL, symbol);
 
         /* now that we just did the lookup, the errno location is no longer stale */
         proc->plugin.errnoGetLocationIsStale = FALSE;
@@ -1371,7 +1371,7 @@ void process_migrate(Process* proc, gpointer threads) {
     struct ProcessMigrateArgs* ts = threads;
     if (!proc->lmid) {
         /* plugin hasn't been loaded into a namespace yet; nothing to do */
-        warning("can't migrate process before namespace is loaded");
+        info("can't migrate process before namespace is loaded");
         return;
     }
     if (!ts || !ts->t1 || !ts->t2) {
