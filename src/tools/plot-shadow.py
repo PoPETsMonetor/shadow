@@ -221,6 +221,7 @@ def main():
             plot_payment_ttpayment(paymentdata, page, args)
             plot_payment_ttpaysuccess(paymentdata, page, args)
             plot_payment_ttclose(paymentdata, page, args)
+            plot_payment_payment_efficiency(paymentdata, page, args)
     except:
         page.close()
         info.close()
@@ -1187,7 +1188,7 @@ def plot_payment_numpayments(data, page, args):
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
                 series = relaytype + " (" + label + ")"
-                pylab.plot(x, y, lineformat[relaytype], label=series)
+                pylab.plot(x, y, lineformat[relaytype][0], label=series)
 
     if f is not None:
         pylab.xlabel("Number of Payments (s)")
@@ -1209,8 +1210,8 @@ def plot_payment_lifetime(data, page, args):
                     fb.extend(d[client][relaytype]["lifetime"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + " (" + label + ")"
-                pylab.plot(x, y, lineformat[relaytype], label=series)
+                series = relaytype
+                pylab.plot(x, y, lineformat[relaytype][0], label=series)
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
@@ -1232,8 +1233,9 @@ def plot_payment_ttestablish(data, page, args):
                     fb.extend(d[client][relaytype]["ttestablish"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + " (" + label + ")"
-                pylab.plot(x, y, lineformat[relaytype], label=series)
+                series = relaytype
+                pylab.plot(x, y, lineformat[relaytype][0], label=series)
+                pylab.xlim(xmax=15);
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
@@ -1255,8 +1257,9 @@ def plot_payment_ttpayment(data, page, args):
                     fb.extend(d[client][relaytype]["ttpayment"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + " (" + label + ")"
-                pylab.plot(x, y, lineformat[relaytype], label=series)
+                series = relaytype
+                pylab.plot(x, y, lineformat[relaytype][0], label=series)
+                pylab.xlim(xmax=15);
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
@@ -1278,8 +1281,9 @@ def plot_payment_ttpaysuccess(data, page, args):
                     fb.extend(d[client][relaytype]["ttpaysuccess"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + " (" + label + ")"
-                pylab.plot(x, y, lineformat[relaytype], label=series)
+                series = relaytype
+                pylab.plot(x, y, lineformat[relaytype][0], label=series)
+                pylab.xlim(xmax=15);
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
@@ -1301,13 +1305,49 @@ def plot_payment_ttclose(data, page, args):
                     fb.extend(d[client][relaytype]["ttclose"][sec])
             if f is not None and len(fb) > 0:
                 x, y = getcdf(fb)
-                series = relaytype + " (" + label + ")"
-                pylab.plot(x, y, lineformat[relaytype], label=series)
+                series = relaytype
+                pylab.plot(x, y, lineformat[relaytype][0], label=series)
+                pylab.xlim(xmax=15);
 
     if f is not None:
         pylab.xlabel("Elapsed Time (s)")
         pylab.ylabel("Cumulative Fraction")
         if not args.notitle: pylab.title("time to close, all nanochannels")
+        pylab.legend(loc="lower right")
+        page.savefig()
+        pylab.close()
+
+def plot_payment_payment_efficiency(data, page, args):
+    f = None
+
+    for (d, label, lineformat) in data:
+        for relaytype in ["guard", "middle", "exit"]:
+            fb = []
+            for client in d:
+                if f is None: f = pylab.figure()
+                for sec in d[client][relaytype]["ttpayment"]:
+                    fb.extend(d[client][relaytype]["ttpayment"][sec])
+            if f is not None and len(fb) > 0:
+                x, y = getcdf(fb)
+                series = relaytype + " send"
+                pylab.plot(x, y, lineformat[relaytype][0], label=series)
+                pylab.xlim(xmax=15);
+
+            fb = []
+            for client in d:
+                if f is None: f = pylab.figure()
+                for sec in d[client][relaytype]["ttpaysuccess"]:
+                    fb.extend(d[client][relaytype]["ttpaysuccess"][sec])
+            if f is not None and len(fb) > 0:
+                x, y = getcdf(fb)
+                series = relaytype + " call"
+                pylab.plot(x, y, lineformat[relaytype][1], label=series)
+                pylab.xlim(xmax=15);
+
+    if f is not None:
+        pylab.xlabel("Elapsed Time (s)")
+        pylab.ylabel("Cumulative Fraction")
+        if not args.notitle: pylab.title("payment efficiency, all nanochannels")
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
@@ -1367,7 +1407,10 @@ def get_data(experiments, lineformats, skiptime, rskiptime, hostpatternshadow, h
         data = json.load(xzcatp.stdout)
         data = prune_data(data, skiptime, rskiptime, hostpatternpayment)
         if 'nodes' in data and len(data['nodes']) > 0:
-            lineformats = {"guard": lfcycle.next(), "middle": lfcycle.next(), "exit": lfcycle.next()}
+            lineformats = {}
+            lineformats["guard"] = [lfcycle.next(), lfcycle.next()]
+            lineformats["middle"] = [lfcycle.next(), lfcycle.next()]
+            lineformats["exit"] = [lfcycle.next(), lfcycle.next()]
             paymentdata.append((data['nodes'], label, lineformats))
 
     return tickdata, shdata, ftdata, tgendata, tordata, paymentdata
