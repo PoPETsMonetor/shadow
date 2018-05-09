@@ -158,7 +158,7 @@ def main():
                 by hostname the data used in generated Payment plots""",
         action="store", dest="hostpatternpayment",
         metavar="PATTERN",
-        default="client")
+        default="")
 
     parser.add_argument('--no-title',
         help="""Plot all graphs without a title""",
@@ -222,6 +222,7 @@ def main():
             plot_payment_ttpaysuccess(paymentdata, page, args)
             plot_payment_ttclose(paymentdata, page, args)
             plot_payment_payment_efficiency(paymentdata, page, args)
+            plot_payment_traffic(paymentdata, info, args)
     except:
         page.close()
         info.close()
@@ -1351,6 +1352,21 @@ def plot_payment_payment_efficiency(data, page, args):
         pylab.legend(loc="lower right")
         page.savefig()
         pylab.close()
+
+def plot_payment_traffic(data, info, args):
+    traffic = {}
+
+    for (d, label, lineformat) in data:
+        for client in d:
+            for ntype in d[client]['traffic']:
+                if ntype not in traffic:
+                    traffic[ntype] = 0
+                traffic[ntype] += d[client]['traffic'][ntype]
+
+    info.write("--- total payment traffic - all ---\n")
+    for ntype in traffic:
+        info.write("{0}: {1} messages\n".format(ntype, traffic[ntype]))
+    info.write("\n");
 
 def get_data(experiments, lineformats, skiptime, rskiptime, hostpatternshadow, hostpatterntgen, hostpatterntor, hostpatternpayment):
     tickdata, shdata, ftdata, tgendata, tordata, paymentdata = [], [], [], [], [], []
