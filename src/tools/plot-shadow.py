@@ -261,7 +261,7 @@ def plot_shadow_ram(datasource, page, args):
     pylab.xlabel("Tick (s)")
     pylab.ylabel("Maximum Resident Set Size (GiB)")
     if not args.notitle: pylab.title("simulation memory usage")
-    pylab.legend(loc="upper left")
+    pylab.legend(loc="lower right")
     page.savefig()
     pylab.close()
 
@@ -859,7 +859,7 @@ def plot_tgen_lastbyte_all(data, page, info, args):
                 info.write("--- global transfer info - {0}, {1} bytes ---\n".format(label, bytes))
                 info.write("mean time to last byte (s): {0}\n".format(numpy.mean(x)))
                 info.write("median time to last byte (s): {0}\n".format(numpy.median(x)))
-                info.write("total throughput (MiB): {0}\n ".format(int(bytes/1048576.0 * len(x))))
+                info.write("total throughput (MiB): {0}\n ".format(int(bytes/1048576.0 * len(lb[bytes]))))
                 info.write("\n");
 
     for key in sorted(figs.keys()):
